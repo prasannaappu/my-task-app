@@ -13,7 +13,6 @@ const PORT = process.env.PORT || 5000;
 
 // TEMPORARY DEBUG: Log the JWT_SECRET being used
 console.log('Backend JWT_SECRET (from process.env):', process.env.JWT_SECRET);
-// You might also want to log its length to check for extra spaces:
 console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
 
 app.use(express.json());
@@ -45,18 +44,29 @@ const upload = multer({ storage: storage });
 // -- Auth Routes --
 app.post('/api/users/register', async (req, res) => {
   const { username, password } = req.body;
+  console.log('Register attempt for username:', username); // DEBUG: Log incoming username
+  console.log('Received password length:', password ? password.length : 0); // DEBUG: Log password length
+
   try {
     const userExists = await User.findOne({ username });
     if (userExists) {
+      console.log('User already exists:', username); // DEBUG: Log if user exists
       return res.status(400).json({ message: 'User already exists' });
     }
-    const user = await User.create({ username, password });
+
+    console.log('Attempting to create new user:', username); // DEBUG: Before user creation
+    const user = await User.create({ username, password }); // This triggers the pre('save') hook for hashing
+    console.log('User created in DB, ID:', user._id); // DEBUG: After successful user creation
+
     res.status(201).json({
       _id: user._id,
       username: user.username,
       token: generateToken(user._id),
     });
+    console.log('Registration successful, token generated for user:', user._id); // DEBUG: Success path
   } catch (error) {
+    console.error('Registration failed for user:', username, 'Error:', error.message); // DEBUG: Log specific error
+    console.error('Full error object:', error); // DEBUG: Log full error object for more detail
     res.status(500).json({ message: error.message });
   }
 });
