@@ -2,57 +2,40 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
+// const jwt = require('jsonwebtoken'); // REMOVED: jwt import
 const Task = require('./Task');
 const User = require('./User');
-const { protect } = require('./authMiddleware');
-// const multer = require('multer'); // Removed multer import
-// const path = require('path'); // Removed path import
+// const { protect } = require('./authMiddleware'); // REMOVED: protect import
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// TEMPORARY DEBUG: Log the JWT_SECRET being used
-console.log('Backend JWT_SECRET (from process.env):', process.env.JWT_SECRET);
-// You might also want to log its length to check for extra spaces:
-console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
+// Removed TEMPORARY DEBUG: Log the JWT_SECRET being used
+// console.log('Backend JWT_SECRET (from process.env):', process.env.JWT_SECRET);
+// console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
 
 app.use(express.json());
 
-// Explicit CORS configuration
+// Explicit CORS configuration (keeping this for frontend access)
 const corsOptions = {
   origin: 'https://my-task-app-frontend-live.vercel.app', // Your Vercel frontend URL
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true, // Allow cookies to be sent
-  optionsSuccessStatus: 204 // Some legacy browsers (IE11, various SmartTVs) choke on 200
+  credentials: true,
+  optionsSuccessStatus: 204
 };
 app.use(cors(corsOptions)); // Use the explicit options
-
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Removed static serving of uploads
 
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Could not connect to MongoDB...', err));
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-};
+// REMOVED: generateToken function
+// const generateToken = (id) => {
+//   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+// };
 
-// -- Multer configuration for file uploads (Removed) --
-/*
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
-const upload = multer({ storage: storage });
-*/
-
-// -- Auth Routes --
+// -- Auth Routes (Will be removed in next step) --
 app.post('/api/users/register', async (req, res) => {
-  // NEW DEBUG: Log the entire request body
+  // DEBUG: Log the entire request body
   console.log('Received registration request with body:', req.body);
 
   const { username, password } = req.body;
@@ -73,7 +56,7 @@ app.post('/api/users/register', async (req, res) => {
     res.status(201).json({
       _id: user._id,
       username: user.username,
-      token: generateToken(user._id),
+      // token: generateToken(user._id), // This line will cause an error now as generateToken is removed
     });
     console.log('Registration successful, token generated for user:', user._id);
   } catch (error) {
@@ -92,7 +75,7 @@ app.post('/api/users/login', async (req, res) => {
       res.json({
         _id: user._id,
         username: user.username,
-        token: generateToken(user._id),
+        // token: generateToken(user._id), // This line will cause an error now as generateToken is removed
       });
       console.log('Login successful for user:', user._id); // DEBUG: Login success
     } else {
@@ -105,41 +88,26 @@ app.post('/api/users/login', async (req, res) => {
   }
 });
 
-// -- User Profile Routes --
-app.get('/api/users/profile', protect, (req, res) => {
-  const { _id, username } = req.user; // Corrected: Removed extra '}'
-  res.json({ _id, username });
+// -- User Profile Routes (Will be removed or modified in later steps) --
+app.get('/api/users/profile', /* protect, */ (req, res) => { // 'protect' will be removed in a later step
+  // const { _id, username } = req.user; // req.user will be undefined without protect
+  // res.json({ _id, username });
+  res.status(404).json({ message: 'User profiles no longer supported' }); // Temporary response
 });
 
-app.put('/api/users/profile', protect, /* upload.single('profilePicture'), */ async (req, res) => { // Removed multer middleware
-  const { username, password } = req.body;
-  try {
-    const user = await User.findById(req.user._id);
-
-    if (user) {
-      user.username = username || user.username;
-      if (password) {
-        user.password = password;
-      }
-      // if (req.file) { // Removed profilePicture handling
-      //   user.profilePicture = `/uploads/${req.file.filename}`;
-      // }
-      const updatedUser = await user.save();
-      res.json({
-        _id: updatedUser._id,
-        username: updatedUser.username,
-        // profilePicture: updatedUser.profilePicture, // Removed profilePicture
-      });
-    } else {
-      res.status(404).json({ message: 'User not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+app.put('/api/users/profile', /* protect, */ async (req, res) => { // 'protect' will be removed in a later step
+  // const { username, password } = req.body;
+  // try {
+  //   const user = await User.findById(req.user._id); // req.user will be undefined without protect
+  //   // ... rest of profile update logic ...
+  // } catch (error) {
+  //   res.status(500).json({ message: error.message });
+  // }
+  res.status(404).json({ message: 'User profiles no longer supported' }); // Temporary response
 });
 
-// -- Task Routes (Protected) --
-app.get('/api/tasks', protect, async (req, res) => {
+// -- Task Routes (Will be modified in later steps) --
+app.get('/api/tasks', protect, async (req, res) => { // 'protect' will be removed in a later step
   try {
     const { status, sortBy } = req.query;
     let filter = { user: req.user._id };
@@ -160,13 +128,13 @@ app.get('/api/tasks', protect, async (req, res) => {
   }
 });
 
-app.post('/api/tasks', protect, async (req, res) => {
+app.post('/api/tasks', protect, async (req, res) => { // 'protect' will be removed in a later step
   const { title, description, dueDate } = req.body;
   const task = new Task({
     title,
     description,
     dueDate,
-    user: req.user._id, // Assign task to logged-in user
+    user: req.user._id, // Assign task to logged-in user (will be removed in a later step)
   });
   try {
     const newTask = await task.save();
@@ -176,11 +144,11 @@ app.post('/api/tasks', protect, async (req, res) => {
   }
 });
 
-app.put('/api/tasks/:id', protect, async (req, res) => {
+app.put('/api/tasks/:id', protect, async (req, res) => { // 'protect' will be removed in a later step
   try {
     const { id } = req.params;
     const { title, description, status, dueDate } = req.body;
-    const task = await Task.findOne({ _id: id, user: req.user._id });
+    const task = await Task.findOne({ _id: id, user: req.user._id }); // User check will be removed
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
@@ -195,9 +163,9 @@ app.put('/api/tasks/:id', protect, async (req, res) => {
   }
 });
 
-app.delete('/api/tasks/:id', protect, async (req, res) => {
+app.delete('/api/tasks/:id', protect, async (req, res) => { // 'protect' will be removed in a later step
   try {
-    const task = await Task.findOne({ _id: req.params.id, user: req.user._id });
+    const task = await Task.findOne({ _id: req.params.id, user: req.user._id }); // User check will be removed
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
