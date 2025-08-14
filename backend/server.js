@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 // const jwt = require('jsonwebtoken'); // REMOVED: jwt import
 const Task = require('./Task');
-const User = require('./User');
+const User = require('./User'); // User model is still imported, but its methods like matchPassword won't be used by server.js anymore
 // const { protect } = require('./authMiddleware'); // REMOVED: protect import
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,84 +33,21 @@ mongoose.connect(process.env.DATABASE_URL)
 //   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 // };
 
-// -- Auth Routes (Will be removed in next step) --
-app.post('/api/users/register', async (req, res) => {
-  // DEBUG: Log the entire request body
-  console.log('Received registration request with body:', req.body);
+// -- Auth Routes (Completely Removed) --
+// app.post('/api/users/register', async (req, res) => { /* ... */ });
+// app.post('/api/users/login', async (req, res) => { /* ... */ });
 
-  const { username, password } = req.body;
-  console.log('Register attempt for username:', username);
-  console.log('Received password length:', password ? password.length : 0);
+// -- User Profile Routes (Completely Removed as they relied on authentication) --
+// app.get('/api/users/profile', protect, (req, res) => { /* ... */ });
+// app.put('/api/users/profile', protect, async (req, res) => { /* ... */ });
 
-  try {
-    const userExists = await User.findOne({ username });
-    if (userExists) {
-      console.log('User already exists:', username);
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    console.log('Attempting to create new user:', username);
-    const user = await User.create({ username, password });
-    console.log('User created in DB, ID:', user._id);
-
-    res.status(201).json({
-      _id: user._id,
-      username: user.username,
-      // token: generateToken(user._id), // This line will cause an error now as generateToken is removed
-    });
-    console.log('Registration successful, token generated for user:', user._id);
-  } catch (error) {
-    console.error('Registration failed for user:', username, 'Error:', error.message);
-    console.error('Full error object:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-app.post('/api/users/login', async (req, res) => {
-  const { username, password } = req.body;
-  console.log('Login attempt for username:', username); // DEBUG: Add for login too
-  try {
-    const user = await User.findOne({ username });
-    if (user && (await user.matchPassword(password))) {
-      res.json({
-        _id: user._id,
-        username: user.username,
-        // token: generateToken(user._id), // This line will cause an error now as generateToken is removed
-      });
-      console.log('Login successful for user:', user._id); // DEBUG: Login success
-    } else {
-      console.log('Invalid login attempt for username:', username); // DEBUG: Invalid login
-      res.status(401).json({ message: 'Invalid username or password' });
-    }
-  } catch (error) {
-    console.error('Login failed for user:', username, 'Error:', error.message); // DEBUG: Login error
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// -- User Profile Routes (Will be removed or modified in later steps) --
-app.get('/api/users/profile', /* protect, */ (req, res) => { // 'protect' will be removed in a later step
-  // const { _id, username } = req.user; // req.user will be undefined without protect
-  // res.json({ _id, username });
-  res.status(404).json({ message: 'User profiles no longer supported' }); // Temporary response
-});
-
-app.put('/api/users/profile', /* protect, */ async (req, res) => { // 'protect' will be removed in a later step
-  // const { username, password } = req.body;
-  // try {
-  //   const user = await User.findById(req.user._id); // req.user will be undefined without protect
-  //   // ... rest of profile update logic ...
-  // } catch (error) {
-  //   res.status(500).json({ message: error.message });
-  // }
-  res.status(404).json({ message: 'User profiles no longer supported' }); // Temporary response
-});
-
-// -- Task Routes (Will be modified in later steps) --
-app.get('/api/tasks', protect, async (req, res) => { // 'protect' will be removed in a later step
+// -- Task Routes (Now Unprotected and Global) --
+// Tasks will no longer be associated with a specific user as authentication is removed.
+// They will operate on a global level.
+app.get('/api/tasks', async (req, res) => { // REMOVED: protect middleware
   try {
     const { status, sortBy } = req.query;
-    let filter = { user: req.user._id };
+    let filter = {}; // Filter is now global, not by user
     if (status) {
       filter.status = status;
     }
@@ -128,13 +65,13 @@ app.get('/api/tasks', protect, async (req, res) => { // 'protect' will be remove
   }
 });
 
-app.post('/api/tasks', protect, async (req, res) => { // 'protect' will be removed in a later step
+app.post('/api/tasks', async (req, res) => { // REMOVED: protect middleware
   const { title, description, dueDate } = req.body;
   const task = new Task({
     title,
     description,
     dueDate,
-    user: req.user._id, // Assign task to logged-in user (will be removed in a later step)
+    // user: req.user._id, // REMOVED: user assignment
   });
   try {
     const newTask = await task.save();
@@ -144,11 +81,12 @@ app.post('/api/tasks', protect, async (req, res) => { // 'protect' will be remov
   }
 });
 
-app.put('/api/tasks/:id', protect, async (req, res) => { // 'protect' will be removed in a later step
+app.put('/api/tasks/:id', async (req, res) => { // REMOVED: protect middleware
   try {
     const { id } = req.params;
     const { title, description, status, dueDate } = req.body;
-    const task = await Task.findOne({ _id: id, user: req.user._id }); // User check will be removed
+    // const task = await Task.findOne({ _id: id, user: req.user._id }); // REMOVED: user check
+    const task = await Task.findById(id); // Find task by ID only
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
@@ -163,9 +101,10 @@ app.put('/api/tasks/:id', protect, async (req, res) => { // 'protect' will be re
   }
 });
 
-app.delete('/api/tasks/:id', protect, async (req, res) => { // 'protect' will be removed in a later step
+app.delete('/api/tasks/:id', async (req, res) => { // REMOVED: protect middleware
   try {
-    const task = await Task.findOne({ _id: req.params.id, user: req.user._id }); // User check will be removed
+    // const task = await Task.findOne({ _id: req.params.id, user: req.user._id }); // REMOVED: user check
+    const task = await Task.findById(req.params.id); // Find task by ID only
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
