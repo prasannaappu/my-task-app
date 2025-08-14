@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
+const cors = require('cors'); // Keep this line
 const jwt = require('jsonwebtoken');
 const Task = require('./Task');
 const User = require('./User');
@@ -13,10 +13,19 @@ const PORT = process.env.PORT || 5000;
 
 // TEMPORARY DEBUG: Log the JWT_SECRET being used
 console.log('Backend JWT_SECRET (from process.env):', process.env.JWT_SECRET);
+// You might also want to log its length to check for extra spaces:
 console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
 
 app.use(express.json());
-app.use(cors());
+
+// Explicit CORS configuration
+const corsOptions = {
+  origin: 'https://my-task-app-frontend-live.vercel.app', // Your Vercel frontend URL
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // Allow cookies to be sent
+  optionsSuccessStatus: 204 // Some legacy browsers (IE11, various SmartTVs) choke on 200
+};
+app.use(cors(corsOptions)); // Use the explicit options
 
 // app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Removed static serving of uploads
 
