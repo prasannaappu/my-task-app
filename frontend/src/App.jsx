@@ -12,8 +12,8 @@ function App() {
   // Task states (keep these)
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState('');
-  const [description, setDescription] = '';
-  const [dueDate, setDueDate] = '';
+  const [description, setDescription] = useState(''); // Corrected: Use useState('')
+  const [dueDate, setDueDate] = useState('');     // Corrected: Use useState('')
   const [editingTask, setEditingTask] = useState(null);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
