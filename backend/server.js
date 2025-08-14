@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); // Keep this line
+const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const Task = require('./Task');
 const User = require('./User');
@@ -52,36 +52,40 @@ const upload = multer({ storage: storage });
 
 // -- Auth Routes --
 app.post('/api/users/register', async (req, res) => {
+  // NEW DEBUG: Log the entire request body
+  console.log('Received registration request with body:', req.body);
+
   const { username, password } = req.body;
-  console.log('Register attempt for username:', username); // DEBUG: Log incoming username
-  console.log('Received password length:', password ? password.length : 0); // DEBUG: Log password length
+  console.log('Register attempt for username:', username);
+  console.log('Received password length:', password ? password.length : 0);
 
   try {
     const userExists = await User.findOne({ username });
     if (userExists) {
-      console.log('User already exists:', username); // DEBUG: Log if user exists
+      console.log('User already exists:', username);
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    console.log('Attempting to create new user:', username); // DEBUG: Before user creation
-    const user = await User.create({ username, password }); // This triggers the pre('save') hook for hashing
-    console.log('User created in DB, ID:', user._id); // DEBUG: After successful user creation
+    console.log('Attempting to create new user:', username);
+    const user = await User.create({ username, password });
+    console.log('User created in DB, ID:', user._id);
 
     res.status(201).json({
       _id: user._id,
       username: user.username,
       token: generateToken(user._id),
     });
-    console.log('Registration successful, token generated for user:', user._id); // DEBUG: Success path
+    console.log('Registration successful, token generated for user:', user._id);
   } catch (error) {
-    console.error('Registration failed for user:', username, 'Error:', error.message); // DEBUG: Log specific error
-    console.error('Full error object:', error); // DEBUG: Log full error object for more detail
+    console.error('Registration failed for user:', username, 'Error:', error.message);
+    console.error('Full error object:', error);
     res.status(500).json({ message: error.message });
   }
 });
 
 app.post('/api/users/login', async (req, res) => {
   const { username, password } = req.body;
+  console.log('Login attempt for username:', username); // DEBUG: Add for login too
   try {
     const user = await User.findOne({ username });
     if (user && (await user.matchPassword(password))) {
@@ -90,10 +94,13 @@ app.post('/api/users/login', async (req, res) => {
         username: user.username,
         token: generateToken(user._id),
       });
+      console.log('Login successful for user:', user._id); // DEBUG: Login success
     } else {
+      console.log('Invalid login attempt for username:', username); // DEBUG: Invalid login
       res.status(401).json({ message: 'Invalid username or password' });
     }
   } catch (error) {
+    console.error('Login failed for user:', username, 'Error:', error.message); // DEBUG: Login error
     res.status(500).json({ message: error.message });
   }
 });
