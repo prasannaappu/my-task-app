@@ -2,23 +2,18 @@ import { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  // Define the backend URL dynamically
-  // In development, it will use 'http://localhost:5000'.
-  // In production, it will use the URL defined in your .env.production file (VITE_REACT_APP_BACKEND_URL).
-  const BACKEND_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:5000';
+  // REMOVED: Authentication states
+  // const [user, setUser] = useState(null);
+  // const [token, setToken] = useState(localStorage.getItem('token') || null);
+  // const [isRegistering, setIsRegistering] = useState(false);
+  // const [authUsername, setAuthUsername] = useState('');
+  // const [authPassword, setAuthPassword] = useState('');
 
-  // Authentication states
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [authUsername, setAuthUsername] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-
-  // Task states
+  // Task states (keep these)
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [description, setDescription] = '';
+  const [dueDate, setDueDate] = '';
   const [editingTask, setEditingTask] = useState(null);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
@@ -27,12 +22,15 @@ function App() {
   const [sortOption, setSortOption] = useState('createdAt:desc');
   const [view, setView] = useState('tasks'); // Controls main view: 'tasks' or 'profile'
 
-  // Notification state
+  // Notification state (keep these, but adjust related logic later)
   const [notifiedTasks, setNotifiedTasks] = useState(new Set()); // Stores IDs of tasks for which a notification has already been shown
+
+  // Define the backend URL dynamically (keep this)
+  const BACKEND_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
   // --- Fetching Data ---
   const fetchTasks = (status = 'all', sort = 'createdAt:desc') => {
-    if (!token) return;
+    // REMOVED: if (!token) return;
 
     let url = `${BACKEND_URL}/api/tasks`; // Updated URL
     const params = [];
@@ -49,7 +47,7 @@ function App() {
     fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`
+        // 'Authorization': `Bearer ${token}` // This will be removed in a later step
       }
     })
       .then(response => {
@@ -65,36 +63,16 @@ function App() {
       .catch(error => console.error('Error fetching tasks:', error));
   };
 
-  const fetchProfile = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/users/profile`, { // Updated URL
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-      const data = await response.json();
-      setUser(data);
-      setAuthUsername(data.username);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      if (error.message.includes('token')) {
-        handleLogout();
-      }
-    }
-  };
+  // REMOVED: fetchProfile function
+  // const fetchProfile = async () => { /* ... */ };
 
+  // Effect to fetch tasks (profile fetch removed)
   useEffect(() => {
-    if (token) {
-      fetchProfile();
-      fetchTasks(filterStatus, sortOption);
-    }
-  }, [token, filterStatus, sortOption]);
+    // REMOVED: if (token) { fetchProfile(); }
+    fetchTasks(filterStatus, sortOption); // Always fetch tasks, no auth dependency
+  }, [filterStatus, sortOption]); // token removed from dependency array
 
-  // --- Notification Logic ---
+  // --- Notification Logic --- (Keep these, but ensure they don't depend on auth)
   const requestNotificationPermission = () => {
     if (!('Notification' in window)) {
       console.warn('This browser does not support desktop notification');
@@ -136,48 +114,11 @@ function App() {
     });
   };
 
-  // --- Authentication Handlers ---
-  const handleAuthSubmit = async (e) => {
-    e.preventDefault();
-    const url = isRegistering
-      ? `${BACKEND_URL}/api/users/register` // Updated URL
-      : `${BACKEND_URL}/api/users/login`;   // Updated URL
+  // --- REMOVED: Authentication Handlers ---
+  // const handleAuthSubmit = async (e) => { /* ... */ };
+  // const handleLogout = () => { /* ... */ };
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username: authUsername, password: authPassword }),
-      });
-      const data = await response.json();
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        setToken(data.token);
-        setUser(data);
-        setAuthPassword('');
-        setView('tasks');
-        requestNotificationPermission();
-      } else {
-        alert(data.message);
-      }
-    } catch (error) {
-      console.error('Auth error:', error);
-      alert('Authentication failed. Please try again.');
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    setTasks([]);
-    setNotifiedTasks(new Set());
-    setView('tasks');
-  };
-
-  // --- Task Handlers ---
+  // --- Task Handlers --- (Will be modified in later steps to remove auth headers)
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title || !description) {
@@ -185,11 +126,11 @@ function App() {
       return;
     }
 
-    fetch(`${BACKEND_URL}/api/tasks`, { // Updated URL
+    fetch(`${BACKEND_URL}/api/tasks`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        // 'Authorization': `Bearer ${token}` // This will be removed in a later step
       },
       body: JSON.stringify({ title, description, dueDate }),
     })
@@ -210,10 +151,10 @@ function App() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`${BACKEND_URL}/api/tasks/${id}`, { // Updated URL
+      await fetch(`${BACKEND_URL}/api/tasks/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          // 'Authorization': `Bearer ${token}` // This will be removed in a later step
         }
       });
       fetchTasks(filterStatus, sortOption);
@@ -225,11 +166,11 @@ function App() {
 
   const handleUpdateStatus = async (id, status) => {
     try {
-      await fetch(`${BACKEND_URL}/api/tasks/${id}`, { // Updated URL
+      await fetch(`${BACKEND_URL}/api/tasks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          // 'Authorization': `Bearer ${token}` // This will be removed in a later step
         },
         body: JSON.stringify({ status }),
       });
@@ -249,11 +190,11 @@ function App() {
 
   const handleSaveEdit = async (id) => {
     try {
-      await fetch(`${BACKEND_URL}/api/tasks/${id}`, { // Updated URL
+      await fetch(`${BACKEND_URL}/api/tasks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          // 'Authorization': `Bearer ${token}` // This will be removed in a later step
         },
         body: JSON.stringify({
           title: editedTitle,
@@ -270,84 +211,29 @@ function App() {
     }
   };
 
-  // --- Profile Handlers ---
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const updateData = {
-        username: authUsername,
-      };
-      if (authPassword) {
-        updateData.password = authPassword;
-      }
+  // --- REMOVED: Profile Handlers ---
+  // const handleProfileUpdate = async (e) => { /* ... */ };
 
-      const response = await fetch(`${BACKEND_URL}/api/users/profile`, { // Updated URL
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updateData),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-      const data = await response.json();
-      setUser(data);
-      alert('Profile updated successfully!');
-      setAuthPassword('');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      alert('Failed to update profile. Please check your inputs.');
-    }
-  };
-
-  // --- Conditional Rendering ---
-  if (!token) {
-    return (
-      <div className="App">
-        <h1>Full-Stack Task App</h1> {/* Remember to change this title in App.jsx */}
-        <div className="auth-form">
-          <h2>{isRegistering ? 'Register' : 'Login'}</h2>
-          <form onSubmit={handleAuthSubmit}>
-            <input
-              type="text"
-              placeholder="Username"
-              value={authUsername}
-              onChange={(e) => setAuthUsername(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-              required
-            />
-            <button type="submit">{isRegistering ? 'Register' : 'Login'}</button>
-          </form>
-          <button onClick={() => setIsRegistering(!isRegistering)}>
-            {isRegistering ? 'Already have an account? Login' : 'Need an account? Register'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // --- Conditional Rendering (Simplified) ---
+  // REMOVED: if (!token) block
+  // The app will now always render the main task view directly.
   return (
     <div className="App">
       <header>
-        <h1>Full-Stack Task App</h1> {/* Remember to change this title in App.jsx */}
+        <h1>Full-Stack Task App (No Auth)</h1> {/* Updated title for clarity */}
         <nav>
-          <button onClick={() => setView('tasks')}>My Tasks</button>
-          <button onClick={() => setView('profile')}>Profile</button>
-          <button onClick={handleLogout}>Logout</button>
+          {/* REMOVED: Profile and Logout buttons */}
+          <button onClick={() => setView('tasks')}>All Tasks</button> {/* Modified text for clarity */}
+          {/* We'll re-evaluate if we need a profile view later, but for now it's gone. */}
         </nav>
       </header>
-      {view === 'tasks' ? renderTasksView() : renderProfileView()}
+      {/* Directly render tasks view */}
+      {renderTasksView()}
+      {/* REMOVED: Conditional rendering for profile view */}
     </div>
   );
 
+  // --- Render Functions for Different Views --- (Profile view will be removed)
   function renderTasksView() {
     return (
       <>
@@ -379,7 +265,7 @@ function App() {
           </form>
         </div>
         <div className="your-tasks">
-          <h2>Your Tasks</h2>
+          <h2>All Tasks</h2> {/* Updated title for clarity */}
           <div className="controls">
             <div className="filters">
               <button onClick={() => setFilterStatus('all')}>All</button>
@@ -405,6 +291,7 @@ function App() {
               {tasks.map(task => (
                 <li key={task._id} className={task.status === 'completed' ? 'completed' : ''}>
                   {editingTask === task._id ? (
+                    // Edit mode for a task
                     <div>
                       <input
                         type="text"
@@ -425,6 +312,7 @@ function App() {
                       <button onClick={() => setEditingTask(null)}>Cancel</button>
                     </div>
                   ) : (
+                    // Display mode for a task
                     <div>
                       <h3>{task.title}</h3>
                       <p>{task.description}</p>
@@ -446,36 +334,8 @@ function App() {
     );
   }
 
-  function renderProfileView() {
-    return (
-      <div className="profile-container">
-        <h2>User Profile</h2>
-        <form onSubmit={handleProfileUpdate}>
-          <div className="form-group">
-            <label htmlFor="username">Username:</label>
-            <input
-              type="text"
-              id="username"
-              value={authUsername}
-              onChange={(e) => setAuthUsername(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">New Password:</label>
-            <input
-              type="password"
-              id="password"
-              placeholder="Leave blank to keep current password"
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-            />
-          </div>
-          <button type="submit">Update Profile</button>
-        </form>
-      </div>
-    );
-  }
+  // REMOVED: renderProfileView function
+  // function renderProfileView() { /* ... */ }
 }
 
 export default App;
